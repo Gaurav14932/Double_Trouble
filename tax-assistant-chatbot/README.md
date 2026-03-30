@@ -1,5 +1,5 @@
-# AI-Powered Property Tax Assistant Chatbot
 
+<<<<<<< HEAD
 A full-stack web application that enables municipal officials to query property tax data using natural language. The app now includes a configurable LLM layer: it uses Google Gemini by default, and can also be switched to Ollama or any OpenAI-compatible endpoint for SQL generation.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
@@ -393,3 +393,5 @@ Built with:
 ---
 
 **Ready to use!** Start with `npm run dev` and visit http://localhost:3000
+=======
+>>>>>>> bae8ba149f74c805bcfe67e56b388af0c115f9ef
