@@ -1,27 +1,16 @@
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/toaster'
 import 'leaflet/dist/leaflet.css'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: '',
-  description: '',
+  title: 'TaxBot | Property Tax Assistant',
+  description:
+    'TaxBot helps you query property tax data, reports, and multilingual analytics from one assistant.',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/taxbot-icon.svg',
+    shortcut: '/taxbot-icon.svg',
   },
 }
 
@@ -34,6 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-sans antialiased">
         {children}
+        <Toaster />
         <Analytics />
       </body>
     </html>

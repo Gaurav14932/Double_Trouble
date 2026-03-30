@@ -1,59 +1,53 @@
+# Property Tax Assistant
 
-<<<<<<< HEAD
-A full-stack web application that enables municipal officials to query property tax data using natural language. The app now includes a configurable LLM layer: it uses Google Gemini by default, and can also be switched to Ollama or any OpenAI-compatible endpoint for SQL generation.
-
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+This is a Next.js property-tax assistant for municipal workflows. It supports natural-language property-tax queries, multilingual replies, structured analytics, and a configurable LLM backend.
 
 ## Features
 
-- **Natural Language Processing**: Ask questions in plain English
-- **AI-Powered SQL Generation**: Google Gemini API converts queries to SQL
-- **Real-time Results**: Instantly retrieve property tax data
-- **Data Visualization**: View results as tables, bar charts, and pie charts
-- **Ward & Zone Analytics**: Generate collection reports by administrative areas
-- **Defaulter Identification**: Quickly identify unpaid properties
-- **Payment Status Tracking**: Monitor payment history and status
-- **Secure Queries**: SQL injection prevention and input validation
-- **Responsive Design**: Works on desktop and mobile devices
+- Natural-language property-tax queries
+- English, Hindi, and Marathi support
+- Built-in analytics for defaulters, payment status, ward reports, and dashboards
+- SQLite-backed local database with demo-data fallback
+- Configurable LLM backend: Gemini, Ollama, or any OpenAI-compatible endpoint
+- Telegram bot webhook support
 
-## Quick Start
+## Tech Stack
 
-### Prerequisites
-- Node.js 18+
-- MySQL 8.0+
-- One LLM provider:
-  - Google Generative AI API key, or
-  - a local Ollama model, or
-  - any OpenAI-compatible API endpoint
+- Next.js 16
+- React 19
+- Tailwind CSS
+- SQLite via `sql.js`
+- Configurable LLM provider layer in `lib/llm.ts`
 
-### 1. Install Dependencies
+## Local Setup
+
+1. Install dependencies:
+
 ```bash
 npm install
 ```
 
-### 2. Setup Database
+2. Create `.env.local` from `.env.local.example`
+
+3. Start the app:
+
 ```bash
-# Create database and load sample data
-mysql -u root -p < scripts/init-database.sql
+npm run dev
 ```
 
-### 3. Configure Environment
-Create `.env.local`:
+4. Open `http://localhost:3000`
+
+## LLM Configuration
+
+### Gemini
+
 ```env
 LLM_PROVIDER=gemini
-
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=root
-DB_NAME=property_tax_db
-
-GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here
+GOOGLE_GENERATIVE_AI_API_KEY=your_key
 GOOGLE_GENERATIVE_AI_MODEL=gemini-2.5-flash
 ```
 
-To use a local or self-hosted model instead, copy from `.env.local.example` and set either:
+### Ollama
 
 ```env
 LLM_PROVIDER=ollama
@@ -61,337 +55,72 @@ OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3.1:8b
 ```
 
-or:
+### OpenAI-Compatible
 
-```env
-LLM_PROVIDER=openai-compatible
-OPENAI_COMPATIBLE_BASE_URL=http://127.0.0.1:8000/v1
-OPENAI_COMPATIBLE_MODEL=your-model-name
-OPENAI_COMPATIBLE_API_KEY=optional
-```
-
-### 4. Run Development Server
-```bash
-npm run dev
-```
-
-Visit **http://localhost:3000**
-
-## Run With A Local LLM
-
-This project can run without Gemini by using the built-in OpenAI-compatible local backend support.
-
-1. Start the local model server:
-```bash
-npm run llm:local:start
-```
-
-2. Keep `.env.local` configured like this:
 ```env
 LLM_PROVIDER=openai-compatible
 OPENAI_COMPATIBLE_BASE_URL=http://127.0.0.1:8000/v1
 OPENAI_COMPATIBLE_MODEL=local-tax-sql
+OPENAI_COMPATIBLE_API_KEY=
 ```
 
-The helper script looks for a GGUF model at:
-- `%USERPROFILE%\\models\\qwen2.5-0.5b-instruct-q4_k_m.gguf`
-- or `data/models/qwen2.5-0.5b-instruct-q4_k_m.gguf`
+## Telegram Bot Setup
 
-## Example Queries
+The repo now includes a Telegram webhook endpoint at `/api/telegram/webhook`.
 
-### Defaulter Management
-```
-"Show top 10 defaulters in Ward 5"
-→ Returns: Properties with highest unpaid amounts in Ward 5
+Add these values to `.env.local`:
 
-"List all unpaid properties in Zone A"
-→ Returns: All properties with payment_status = UNPAID in Zone A
-
-"Which properties have never paid their taxes?"
-→ Returns: Properties with last_payment_date = NULL
+```env
+APP_BASE_URL=https://your-public-domain.com
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_WEBHOOK_SECRET=your_random_secret
 ```
 
-### Payment Analytics
-```
-"Total pending tax in Zone A"
-→ Returns: Sum of all due_amounts grouped by zone
+Important:
 
-"Generate ward-wise collection report"
-→ Returns: Table showing total, paid, and unpaid amounts per ward
+- `APP_BASE_URL` must be a public HTTPS URL.
+- Telegram cannot reach `localhost` directly.
+- If you are testing locally, expose the app with a tunnel and use that public HTTPS URL.
 
-"How many properties are partially paid?"
-→ Returns: Count of properties by payment_status
-```
+Start the app, then register the webhook:
 
-### Individual Property Lookup
-```
-"Check payment status of property ID 1023"
-→ Returns: Specific property details and payment info
-
-"Show properties owned by Rajesh Kumar"
-→ Returns: All properties for that owner
-```
-
-## Architecture
-
-### Tech Stack
-
-**Frontend**
-- Next.js 16 (React framework)
-- React 19 (UI library)
-- Tailwind CSS (styling)
-- shadcn/ui (component library)
-- Recharts (data visualization)
-
-**Backend**
-- Next.js API Routes
-- Node.js runtime
-
-**Database**
-- MySQL 8.0+
-- Connection pooling via mysql2
-
-**AI**
-- Configurable LLM provider layer
-- Gemini by default
-- Optional Ollama or OpenAI-compatible backend
-
-### System Flow
-
-```
-User Input (Chat)
-    ↓
-API Route (/api/chat)
-    ↓
-Gemini API (NLP → SQL)
-    ↓
-SQL Validation
-    ↓
-MySQL Query
-    ↓
-Result Formatting
-    ↓
-Frontend Display (Table/Chart)
-```
-
-## Database Schema
-
-### Properties Table
-```sql
-CREATE TABLE properties (
-  property_id INT PRIMARY KEY AUTO_INCREMENT,
-  owner_name VARCHAR(100),
-  ward VARCHAR(50),
-  zone VARCHAR(50),
-  property_address VARCHAR(255),
-  tax_amount DECIMAL(10,2),
-  due_amount DECIMAL(10,2),
-  last_payment_date DATE,
-  payment_status ENUM('PAID','UNPAID','PARTIAL')
-);
-```
-
-### Sample Data
-- **100 properties** across 5 wards
-- **3 zones** (A, B, C)
-- Mixed payment statuses
-- Realistic tax amounts (₹11,000 - ₹19,000)
-
-## API Endpoints
-
-### POST /api/chat
-Process natural language query and return results.
-
-**Request:**
-```json
-{
-  "message": "Show top defaulters in Ward 5"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "results": [
-      {
-        "property_id": 1,
-        "owner_name": "John Doe",
-        "ward": "Ward 5",
-        "due_amount": 19000
-      }
-    ],
-    "intent": "Identify defaulters",
-    "explanation": "Found properties with unpaid taxes in Ward 5",
-    "queryType": "table",
-    "resultCount": 15,
-    "query": "SELECT * FROM properties WHERE..."
-  }
-}
-```
-
-### GET /api/health
-Check API and database status.
-
-### GET /api/schema
-Retrieve database schema information.
-
-## Project Structure
-
-```
-property-tax-assistant/
-├── app/
-│   ├── page.tsx              # Main chatbot page
-│   ├── layout.tsx            # Root layout
-│   ├── globals.css           # Global styles
-│   └── api/
-│       ├── chat/route.ts     # Chat API endpoint
-│       ├── health/route.ts   # Health check
-│       └── schema/route.ts   # Schema endpoint
-├── components/
-│   ├── ChatInterface.tsx     # Main chat UI
-│   ├── MessageBubble.tsx     # Message display
-│   ├── ResultsDisplay.tsx    # Results container
-│   ├── DataTable.tsx         # Data table view
-│   ├── ChartDisplay.tsx      # Charts & stats
-│   └── Header.tsx            # App header
-├── lib/
-│   ├── db.ts                 # Database utilities
-│   ├── gemini.ts             # Gemini AI integration
-│   └── errors.ts             # Error handling
-├── scripts/
-│   └── init-database.sql     # Database setup
-├── .env.local                # Configuration
-└── SETUP_GUIDE.md            # Detailed setup
-```
-
-## Component Overview
-
-### ChatInterface
-- Main chat component
-- Manages conversation state
-- Sends queries to API
-- Displays messages and results
-
-### ResultsDisplay
-- Renders query results
-- Chooses between table/chart view
-- Shows SQL query transparency
-- Displays summary statistics
-
-### DataTable
-- Paginated table view
-- Formats columns and values
-- Handles large datasets
-- Sortable columns
-
-### ChartDisplay
-- Bar charts for comparisons
-- Pie charts for distributions
-- Summary statistics cards
-- Responsive layouts
-
-## Security Features
-
-1. **SQL Injection Prevention**
-   - Validates all queries
-   - Blocks dangerous operations
-   - Parameterized database queries
-
-2. **API Key Management**
-   - Environment variables only
-   - Never exposed in frontend
-   - Server-side execution
-
-3. **Input Validation**
-   - User input sanitization
-   - Query string validation
-   - Rate limiting ready
-
-## Performance
-
-- **Database Indexes** on ward, zone, payment_status, due_amount
-- **Query Limits** to 100 rows per query
-- **Frontend Pagination** (10 items per page)
-- **Connection Pooling** for MySQL efficiency
-
-## Troubleshooting
-
-### Database Connection Failed
 ```bash
-# Verify MySQL is running
-mysql -u root -p -e "SELECT 1;"
-
-# Check .env.local credentials
-cat .env.local
+npm run telegram:webhook:set
 ```
 
-### API Key Issues
+That command points Telegram to:
+
+```text
+https://your-public-domain.com/api/telegram/webhook
+```
+
+### Telegram Commands
+
+- `/start` shows the welcome message
+- `/help` shows usage help
+- `/en <query>` forces English replies
+- `/hi <query>` forces Hindi replies
+- `/mr <query>` forces Marathi replies
+
+Example:
+
+```text
+/en Show top 10 defaulters in Ward 5
+```
+
+## API Routes
+
+- `POST /api/chat` for the web chat client
+- `GET /api/health` for health checks
+- `GET /api/schema` for schema inspection
+- `GET /api/telegram/webhook` for Telegram webhook status
+- `POST /api/telegram/webhook` for Telegram updates
+
+## Useful Scripts
+
 ```bash
-# Verify key in .env.local
-echo $GOOGLE_GENERATIVE_AI_API_KEY
-
-# Get key: https://ai.google.dev/
+npm run dev
+npm run build
+npm run llm:local:start
+npm run telegram:webhook:set
 ```
-
-### No Results
-```bash
-# Check database has data
-mysql -u property_tax_db -e "SELECT COUNT(*) FROM properties;"
-
-# Re-initialize database
-mysql -u root -p < scripts/init-database.sql
-```
-
-## Future Roadmap
-
-- [ ] Voice input support
-- [ ] Multi-language support (Hindi, Marathi, etc.)
-- [ ] Predictive defaulter analytics
-- [ ] Payment system integration
-- [ ] PDF/Excel export
-- [ ] Role-based access control
-- [ ] Mobile app
-- [ ] SMS notifications
-- [ ] Real-time dashboards
-
-## Contributing
-
-Contributions welcome! Please fork and submit pull requests.
-
-## License
-
-MIT License - See LICENSE file for details
-
-## Support
-
-For issues or questions:
-- Check SETUP_GUIDE.md for detailed setup instructions
-- Review sample queries in this README
-- Check API error messages for debugging hints
-
-## Credits
-
-Built with:
-- Google Generative AI (Gemini API)
-- Next.js and React
-- Tailwind CSS
-- Recharts
-- MySQL
-
-## Changelog
-
-### v1.0.0 (Initial Release)
-- Natural language query support
-- 100 sample properties
-- Ward and zone analytics
-- Payment status tracking
-- Data visualization
-- Responsive design
-
----
-
-**Ready to use!** Start with `npm run dev` and visit http://localhost:3000
-=======
->>>>>>> bae8ba149f74c805bcfe67e56b388af0c115f9ef

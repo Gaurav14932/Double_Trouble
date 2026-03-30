@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { AppLanguage, getUiCopy, LANGUAGE_OPTIONS } from '@/lib/language';
 
 interface HeaderProps {
@@ -11,9 +12,31 @@ export default function Header({ language, onLanguageChange }: HeaderProps) {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="max-w-7xl mx-auto flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{uiCopy.headerTitle}</h1>
-          <p className="text-sm text-gray-600 mt-1">{uiCopy.headerSubtitle}</p>
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/taxbot-icon.svg"
+              alt="TaxBot logo"
+              width={64}
+              height={64}
+              priority
+              className="h-12 w-12 shrink-0 rounded-2xl sm:h-14 sm:w-14"
+            />
+            <div className="min-w-0">
+              <h1 className="flex items-baseline gap-1 leading-none">
+                <span className="text-3xl font-black tracking-tight text-[#145A67] sm:text-4xl">
+                  Tax
+                </span>
+                <span className="text-3xl font-black tracking-tight text-[#7ECF5A] sm:text-4xl">
+                  Bot
+                </span>
+              </h1>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 sm:text-xs">
+                {uiCopy.headerTitle}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-gray-600">{uiCopy.headerSubtitle}</p>
         </div>
 
         <label className="flex items-center gap-3 text-sm text-gray-700">

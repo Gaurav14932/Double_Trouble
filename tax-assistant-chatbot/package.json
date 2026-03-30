@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "llm:local:start": "powershell -ExecutionPolicy Bypass -File .\\scripts\\start-local-llm.ps1"
+    "llm:local:start": "powershell -ExecutionPolicy Bypass -File .\\scripts\\start-local-llm.ps1",
+    "telegram:webhook:set": "powershell -ExecutionPolicy Bypass -File .\\scripts\\set-telegram-webhook.ps1"
   },
   "dependencies": {
     "@google/generative-ai": "^0.3.1",
