@@ -1,0 +1,32 @@
+[DB] Query error: Error: Access denied for user 'root'@'localhost' (using password: NO)
+    at ignore-listed frames {
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  sqlMessage: "Access denied for user 'root'@'localhost' (using password: NO)",
+  sql: undefined
+}
+[DB] Schema fetch error: Error: Access denied for user 'root'@'localhost' (using password: NO)
+    at ignore-listed frames {
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  sqlMessage: "Access denied for user 'root'@'localhost' (using password: NO)",
+  sql: undefined
+}
+[DB] Query error: Error: Access denied for user 'root'@'localhost' (using password: NO)
+    at ignore-listed frames {
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  sqlMessage: "Access denied for user 'root'@'localhost' (using password: NO)",
+  sql: undefined
+}
+[API] Error: Error: Access denied for user 'root'@'localhost' (using password: NO)
+    at ignore-listed frames {
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  sqlMessage: "Access denied for user 'root'@'localhost' (using password: NO)",
+  sql: undefined
+}

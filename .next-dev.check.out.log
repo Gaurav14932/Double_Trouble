@@ -1,0 +1,22 @@
+
+> my-project@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.50.126.9:3000
+- Environments: .env.local
+✓ Ready in 450ms
+Creating turbopack project {
+  dir: 'C:\\Users\\user\\Downloads\\tax assistant chatbot',
+  testMode: true
+}
+
+ GET / 200 in 652ms (next.js: 289ms, application-code: 363ms)
+[API] Received query: Show total pending tax by ward
+[API] Converting to SQL...
+[DB] Connection pool created successfully
+[API] Generated SQL: SELECT ward, SUM(due_amount) AS total_pending_tax FROM properties WHERE payment_status = 'UNPAID' AND due_amount > 0 GROUP BY ward ORDER BY total_pending_tax DESC LIMIT 100;
+[API] Executing query...
+ POST /api/chat 500 in 3.4s (next.js: 321ms, application-code: 3.1s)
+  Reload env: .env.local

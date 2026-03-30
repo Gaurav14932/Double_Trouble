@@ -1,0 +1,9 @@
+▲ Next.js 16.2.0
+- Local:         http://localhost:3001
+- Network:       http://10.50.126.9:3001
+✓ Ready in 173ms
+[API] Received query: Show total pending tax by ward
+[API] Converting to SQL...
+[DB] Connection pool created successfully
+[API] Generated SQL: SELECT ward, SUM(due_amount) AS total_pending_tax FROM properties WHERE payment_status = 'UNPAID' AND due_amount > 0 GROUP BY ward ORDER BY total_pending_tax DESC LIMIT 100;
+[API] Executing query...

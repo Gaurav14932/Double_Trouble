@@ -1,0 +1,65 @@
+[DB] Query error: Error: Access denied for user 'root'@'localhost' (using password: YES)
+    at a.asError (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:337976)
+    at o.execute (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:377043)
+    at n.handlePacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:242321)
+    at n.onPacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236158)
+    at n.executeStart (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:342245)
+    at Socket.<anonymous> (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236304) {
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  sqlMessage: "Access denied for user 'root'@'localhost' (using password: YES)",
+  sql: undefined
+}
+[DB] Query error: Error: Access denied for user 'root'@'localhost' (using password: YES)
+    at a.asError (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:337976)
+    at o.execute (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:377043)
+    at n.handlePacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:242321)
+    at n.onPacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236158)
+    at n.executeStart (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:342245)
+    at Socket.<anonymous> (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236304) {
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  sqlMessage: "Access denied for user 'root'@'localhost' (using password: YES)",
+  sql: undefined
+}
+[DB] Query error: Error: Access denied for user 'root'@'localhost' (using password: YES)
+    at a.asError (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:337976)
+    at o.execute (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:377043)
+    at n.handlePacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:242321)
+    at n.onPacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236158)
+    at n.executeStart (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:342245)
+    at Socket.<anonymous> (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236304) {
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  sqlMessage: "Access denied for user 'root'@'localhost' (using password: YES)",
+  sql: undefined
+}
+[DB] Query error: Error: Access denied for user 'root'@'localhost' (using password: YES)
+    at a.asError (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:337976)
+    at o.execute (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:377043)
+    at n.handlePacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:242321)
+    at n.onPacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236158)
+    at n.executeStart (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:342245)
+    at Socket.<anonymous> (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236304) {
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  sqlMessage: "Access denied for user 'root'@'localhost' (using password: YES)",
+  sql: undefined
+}
+[DB] Query error: Error: Access denied for user 'root'@'localhost' (using password: YES)
+    at a.asError (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:337976)
+    at o.execute (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:377043)
+    at n.handlePacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:242321)
+    at n.onPacket (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236158)
+    at n.executeStart (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:11:342245)
+    at Socket.<anonymous> (C:\Users\user\Downloads\tax assistant chatbot\.next\server\chunks\[root-of-the-server]__0ej9vh~._.js:15:236304) {
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  sqlMessage: "Access denied for user 'root'@'localhost' (using password: YES)",
+  sql: undefined
+}

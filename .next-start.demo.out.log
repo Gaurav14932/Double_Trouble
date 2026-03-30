@@ -1,0 +1,14 @@
+▲ Next.js 16.2.0
+- Local:         http://localhost:3002
+- Network:       http://10.50.126.9:3002
+✓ Ready in 267ms
+[API] Received query: Show top 10 defaulters in Ward 5
+[DB] Connection pool created successfully
+[API] Falling back to bundled demo data: Access denied for user 'root'@'localhost' (using password: YES)
+[API] Received query: hii
+[API] Received query: Total pending tax in Zone A
+[API] Falling back to bundled demo data: Access denied for user 'root'@'localhost' (using password: YES)
+[API] Received query: Generate ward-wise collection report
+[API] Falling back to bundled demo data: Access denied for user 'root'@'localhost' (using password: YES)
+[API] Received query: Show total pending tax by ward
+[API] Falling back to bundled demo data: Access denied for user 'root'@'localhost' (using password: YES)

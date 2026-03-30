@@ -1,0 +1,19 @@
+▲ Next.js 16.2.0
+- Local:         http://localhost:3003
+- Network:       http://10.50.126.9:3003
+✓ Ready in 212ms
+[API] Received query: Show top 10 defaulters in Ward 5
+[DB] SQLite database ready: C:\Users\user\Downloads\tax assistant chatbot\data\property-tax.sqlite
+[API] Converting to SQL...
+[API] Received query: Check payment status of property ID 1
+[API] Converting to SQL...
+[API] Generated SQL: SELECT property_id, owner_name, property_address, payment_status FROM properties WHERE property_id = 1 ORDER BY property_id;
+[API] Executing query...
+[API] Query executed. Results: 1
+[API] Generated SQL: SELECT property_id, owner_name, property_address, due_amount
+FROM properties
+WHERE ward = 'Ward 5' AND payment_status = 'UNPAID' AND due_amount > 0
+ORDER BY due_amount DESC
+LIMIT 10;
+[API] Executing query...
+[API] Query executed. Results: 8
