@@ -322,20 +322,24 @@ Important rules:
 2. Always use the exact table and column names from the schema above.
 3. Use SQLite syntax only.
 4. Only use schema objects that actually exist in the schema above. Do not invent tables, views, joins, or IDs.
-5. The main table is properties. The only additional schema object available is ward_collection_summary.
-6. payment_status is a column on properties. It is not a separate table.
+5. The main table is properties. The additional schema objects available are ward_collection_summary, zone_collection_summary, payment_status_summary, officer_collection_summary, monthly_collection_summary, and yearly_collection_summary.
+6. payment_status and collection_officer are columns on properties. They are not separate tables.
 7. The ward column stores labels like 'Ward 1', 'Ward 2', 'Ward 3', 'Ward 4', 'Ward 5'. Never filter ward using only the number.
 8. The zone column stores labels like 'Zone A', 'Zone B', 'Zone C'. Never filter zone using only 'A', 'B', or 'C'.
 9. The payment_status column uses only these exact values: 'PAID', 'UNPAID', 'PARTIAL'.
 10. For simple property lookups, query directly from properties without joins.
-11. For defaulters, query properties where payment_status = 'UNPAID' and due_amount > 0.
-12. For payment status, filter by payment_status.
-13. For ward-wise reports, group by ward.
-14. For zone-wise reports, group by zone.
-15. Always include ORDER BY when it improves result readability.
-16. Use LIMIT 100 for broad result sets to avoid large responses.
-17. Return intent and explanation in ${getOutputLanguageLabel(language)}.
-18. Respond with valid JSON only. Do not add markdown fences or extra commentary.
+11. For defaulters, query properties where payment_status = 'UNPAID' and due_amount > 0, or use total_due from a summary view when the question is about grouped hotspots.
+12. For payment status, filter by payment_status or use payment_status_summary for grouped status totals.
+13. For ward-wise reports, group by ward or use ward_collection_summary.
+14. For zone-wise reports, group by zone or use zone_collection_summary.
+15. For officer performance questions, use collection_officer on properties or officer_collection_summary.
+16. For month-wise or year-wise recovery trends, prefer monthly_collection_summary or yearly_collection_summary.
+17. For deep comparisons such as collection efficiency, recovery rate, outstanding burden, or partial-payment concentration, prefer summary views plus computed percentages.
+18. To find stale accounts, use last_payment_date IS NULL or compare date(last_payment_date) with SQLite date('now', '-180 day') or date('now', '-365 day').
+19. Always include ORDER BY when it improves result readability.
+20. Use LIMIT 100 for broad result sets to avoid large responses.
+21. Return intent and explanation in ${getOutputLanguageLabel(language)}.
+22. Respond with valid JSON only. Do not add markdown fences or extra commentary.
 
 Normalization examples:
 - If the user asks for "Ward 5", use ward = 'Ward 5'
@@ -343,6 +347,13 @@ Normalization examples:
 - If the user asks for "paid properties", use payment_status = 'PAID'
 - If the user asks for "top defaulters", sort unpaid properties by due_amount DESC
 - If the user asks for "Show 5 paid properties in Zone A ordered by owner name", query only the properties table and use: WHERE payment_status = 'PAID' AND zone = 'Zone A' ORDER BY owner_name ASC LIMIT 5
+- If the user asks for "Which ward has the highest outstanding tax?", use ward_collection_summary ordered by total_due DESC
+- If the user asks for "Compare collection efficiency across zones", calculate ROUND(total_collected * 100.0 / NULLIF(total_tax, 0), 2) from zone_collection_summary
+- If the user asks for "Which payment status bucket carries the most dues?", use payment_status_summary ordered by total_due DESC
+- If the user asks for "Show stale accounts with no payment in the last year", query properties where last_payment_date IS NULL OR date(last_payment_date) <= date('now', '-365 day')
+- If the user asks for "Compare officer performance", use officer_collection_summary ordered by collection_efficiency_pct DESC
+- If the user asks for "Show monthly collection trend", use monthly_collection_summary ordered by payment_month ASC
+- If the user asks for "Show yearly recovery trend", use yearly_collection_summary ordered by payment_year ASC
 
 Response format:
 {

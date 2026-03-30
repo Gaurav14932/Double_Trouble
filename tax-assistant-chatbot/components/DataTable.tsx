@@ -1,17 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
+import { AppLanguage } from '@/lib/language';
+import { getColumnLabel, getInterfaceLabels } from '@/lib/ui-localization';
 
 interface DataTableProps {
   data: any[];
+  language: AppLanguage;
 }
 
-export default function DataTable({ data }: DataTableProps) {
+export default function DataTable({ data, language }: DataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const labels = getInterfaceLabels(language);
 
   if (!data || data.length === 0) {
-    return <div className="p-4 text-gray-600">No data to display</div>;
+    return <div className="p-4 text-gray-600">{labels.noDataToDisplay}</div>;
   }
 
   const columns = Object.keys(data[0]);
@@ -22,7 +26,7 @@ export default function DataTable({ data }: DataTableProps) {
 
   const formatValue = (value: any): string => {
     if (value === null || value === undefined) return '-';
-    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'boolean') return value ? labels.yes : labels.no;
     if (typeof value === 'number') {
       if (Number.isInteger(value)) return value.toString();
       return value.toFixed(2);
@@ -43,10 +47,7 @@ export default function DataTable({ data }: DataTableProps) {
                   key={col}
                   className="px-4 py-3 text-left text-sm font-semibold text-gray-700 whitespace-nowrap"
                 >
-                  {col
-                    .split('_')
-                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                    .join(' ')}
+                  {getColumnLabel(col, language)}
                 </th>
               ))}
             </tr>
@@ -77,8 +78,7 @@ export default function DataTable({ data }: DataTableProps) {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            Showing {startIdx + 1} to {Math.min(endIdx, data.length)} of{' '}
-            {data.length} results
+            {labels.showingResults(startIdx + 1, Math.min(endIdx, data.length), data.length)}
           </p>
           <div className="flex gap-2">
             <button
@@ -86,7 +86,7 @@ export default function DataTable({ data }: DataTableProps) {
               disabled={currentPage === 1}
               className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
             >
-              Previous
+              {labels.previous}
             </button>
             <div className="flex gap-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -112,7 +112,7 @@ export default function DataTable({ data }: DataTableProps) {
               disabled={currentPage === totalPages}
               className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
             >
-              Next
+              {labels.next}
             </button>
           </div>
         </div>

@@ -3,12 +3,16 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import { DashboardData } from '@/lib/chat-types';
+import { AppLanguage } from '@/lib/language';
+import { getInterfaceLabels } from '@/lib/ui-localization';
 
 interface WardHeatMapProps {
   map: NonNullable<DashboardData['map']>;
+  language: AppLanguage;
 }
 
-export default function WardHeatMap({ map }: WardHeatMapProps) {
+export default function WardHeatMap({ map, language }: WardHeatMapProps) {
+  const labels = getInterfaceLabels(language);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const maxPendingTax = useMemo(
     () => Math.max(...map.wards.map((ward) => ward.pendingTax), 1),
@@ -121,11 +125,11 @@ export default function WardHeatMap({ map }: WardHeatMapProps) {
         `
           <div class="ward-map-tooltip__content">
             <p class="ward-map-tooltip__title">${ward.ward}</p>
-            <p>Pending tax: <strong>${formatCurrency(ward.pendingTax)}</strong></p>
-            <p>Properties covered: <strong>${ward.totalProperties}</strong></p>
+            <p>${labels.pendingTax}: <strong>${formatCurrency(ward.pendingTax)}</strong></p>
+            <p>${labels.propertiesCovered}: <strong>${ward.totalProperties}</strong></p>
             ${
               ward.isFocus
-                ? '<p class="ward-map-tooltip__focus">Highlighted report area</p>'
+                ? `<p class="ward-map-tooltip__focus">${labels.highlightedReportArea}</p>`
                 : ''
             }
           </div>
@@ -176,7 +180,7 @@ export default function WardHeatMap({ map }: WardHeatMapProps) {
       window.cancelAnimationFrame(frameId);
       mapInstance.remove();
     };
-  }, [map.center, map.wards, map.zoom, maxPendingTax]);
+  }, [labels.highlightedReportArea, labels.pendingTax, labels.propertiesCovered, language, map.center, map.wards, map.zoom, maxPendingTax]);
 
   return (
     <div className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
@@ -189,7 +193,7 @@ export default function WardHeatMap({ map }: WardHeatMapProps) {
         </div>
         <div className="rounded-2xl border border-rose-200/20 bg-white/10 px-4 py-3 text-sm text-white shadow-lg backdrop-blur">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
-            Highest Pending Ward
+            {labels.highestPendingWard}
           </p>
           <p className="mt-2 text-base font-semibold">{hottestWard.ward}</p>
           <p className="text-sm text-rose-200">{formatCurrency(hottestWard.pendingTax)}</p>
@@ -199,13 +203,13 @@ export default function WardHeatMap({ map }: WardHeatMapProps) {
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         <div className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 backdrop-blur">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
-            Wards Visible
+            {labels.wardsVisible}
           </p>
           <p className="mt-2 text-2xl font-bold text-white">{map.wards.length}</p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 backdrop-blur">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
-            Total Pending Tax
+            {labels.totalPendingTax}
           </p>
           <p className="mt-2 text-2xl font-bold text-white">
             {formatCompactCurrency(totalPendingTax)}
@@ -213,7 +217,7 @@ export default function WardHeatMap({ map }: WardHeatMapProps) {
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 backdrop-blur">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
-            Average Per Ward
+            {labels.averagePerWard}
           </p>
           <p className="mt-2 text-2xl font-bold text-white">
             {formatCompactCurrency(averagePendingTax)}
@@ -230,25 +234,25 @@ export default function WardHeatMap({ map }: WardHeatMapProps) {
 
         <div className="pointer-events-none absolute left-4 top-4 z-[500] rounded-2xl border border-white/15 bg-slate-950/72 px-4 py-3 shadow-xl backdrop-blur">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
-            Heat Scale
+            {labels.heatScale}
           </p>
           <div className="mt-3 flex items-center gap-2">
-            <span className="text-[11px] text-slate-300">Low</span>
+            <span className="text-[11px] text-slate-300">{labels.low}</span>
             <div className="h-2 w-28 rounded-full bg-gradient-to-r from-[#fde68a] via-[#fb923c] to-[#b91c1c]" />
-            <span className="text-[11px] text-slate-300">High</span>
+            <span className="text-[11px] text-slate-300">{labels.high}</span>
           </div>
           <p className="mt-2 text-[11px] leading-5 text-slate-400">
-            Larger glowing markers mean more pending tax. Ward tags show live dues.
+            {labels.heatScaleHint}
           </p>
         </div>
 
         <div className="pointer-events-none absolute bottom-4 right-4 z-[500] rounded-2xl border border-white/15 bg-white/88 px-4 py-3 text-slate-900 shadow-xl backdrop-blur">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Focus
+            {labels.focus}
           </p>
           <div className="mt-2 flex items-center gap-2 text-sm">
             <span className="inline-block h-3 w-3 rounded-full border-2 border-slate-900 bg-rose-500" />
-            <span>Dark outline marks the active report ward.</span>
+            <span>{labels.focusHint}</span>
           </div>
         </div>
       </div>

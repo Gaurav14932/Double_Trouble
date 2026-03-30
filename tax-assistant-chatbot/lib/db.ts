@@ -62,6 +62,7 @@ async function ensureDatabaseSchema(database: any) {
       owner_name TEXT NOT NULL,
       ward TEXT NOT NULL,
       zone TEXT NOT NULL,
+      collection_officer TEXT NOT NULL DEFAULT 'Officer Anita Patil',
       property_address TEXT,
       tax_amount REAL NOT NULL DEFAULT 0,
       due_amount REAL NOT NULL DEFAULT 0,
@@ -76,7 +77,9 @@ async function ensureDatabaseSchema(database: any) {
   );
 
   ensureIntegratedTaxColumns(database);
+  const properties = await getDemoProperties();
   backfillIntegratedTaxData(database);
+  const insertedRows = syncSeedProperties(database, properties);
 
   runStatement(
     database,
@@ -88,6 +91,10 @@ async function ensureDatabaseSchema(database: any) {
   );
   runStatement(
     database,
+    `CREATE INDEX IF NOT EXISTS idx_collection_officer ON properties (collection_officer);`
+  );
+  runStatement(
+    database,
     `CREATE INDEX IF NOT EXISTS idx_payment_status ON properties (payment_status);`
   );
   runStatement(
@@ -95,22 +102,118 @@ async function ensureDatabaseSchema(database: any) {
     `CREATE INDEX IF NOT EXISTS idx_due_amount ON properties (due_amount);`
   );
 
-  const existingRows = getExecRows<{ count: number }>(
-    database.exec('SELECT COUNT(*) as count FROM properties;')
+  createAnalyticsViews(database);
+  return insertedRows > 0;
+}
+
+function createAnalyticsViews(database: any) {
+  runStatement(database, 'DROP VIEW IF EXISTS ward_collection_summary;');
+  runStatement(database, 'DROP VIEW IF EXISTS zone_collection_summary;');
+  runStatement(database, 'DROP VIEW IF EXISTS payment_status_summary;');
+  runStatement(database, 'DROP VIEW IF EXISTS officer_collection_summary;');
+  runStatement(database, 'DROP VIEW IF EXISTS monthly_collection_summary;');
+  runStatement(database, 'DROP VIEW IF EXISTS yearly_collection_summary;');
+  runStatement(
+    database,
+    `CREATE VIEW ward_collection_summary AS
+      SELECT
+        ward,
+        COUNT(*) AS total_properties,
+        SUM(tax_amount) AS total_tax,
+        SUM(due_amount + water_tax_due + sewerage_tax_due + solid_waste_tax_due) AS total_due,
+        SUM(tax_amount - due_amount) AS total_collected,
+        SUM(CASE WHEN payment_status = 'PAID' THEN 1 ELSE 0 END) AS paid_count,
+        SUM(CASE WHEN payment_status = 'UNPAID' THEN 1 ELSE 0 END) AS unpaid_count,
+        SUM(CASE WHEN payment_status = 'PARTIAL' THEN 1 ELSE 0 END) AS partial_count
+      FROM properties
+      GROUP BY ward;`
+  );
+  runStatement(
+    database,
+    `CREATE VIEW zone_collection_summary AS
+      SELECT
+        zone,
+        COUNT(*) AS total_properties,
+        SUM(tax_amount) AS total_tax,
+        SUM(due_amount + water_tax_due + sewerage_tax_due + solid_waste_tax_due) AS total_due,
+        SUM(tax_amount - due_amount) AS total_collected,
+        SUM(CASE WHEN payment_status = 'PAID' THEN 1 ELSE 0 END) AS paid_count,
+        SUM(CASE WHEN payment_status = 'UNPAID' THEN 1 ELSE 0 END) AS unpaid_count,
+        SUM(CASE WHEN payment_status = 'PARTIAL' THEN 1 ELSE 0 END) AS partial_count
+      FROM properties
+      GROUP BY zone;`
+  );
+  runStatement(
+    database,
+    `CREATE VIEW payment_status_summary AS
+      SELECT
+        payment_status,
+        COUNT(*) AS property_count,
+        SUM(tax_amount) AS total_tax,
+        SUM(due_amount + water_tax_due + sewerage_tax_due + solid_waste_tax_due) AS total_due
+      FROM properties
+      GROUP BY payment_status;`
+  );
+  runStatement(
+    database,
+    `CREATE VIEW officer_collection_summary AS
+      SELECT
+        collection_officer,
+        COUNT(*) AS total_properties,
+        SUM(tax_amount) AS total_tax,
+        SUM(due_amount + water_tax_due + sewerage_tax_due + solid_waste_tax_due) AS total_due,
+        SUM(tax_amount - due_amount) AS total_collected,
+        ROUND(SUM(tax_amount - due_amount) * 100.0 / NULLIF(SUM(tax_amount), 0), 2) AS collection_efficiency_pct,
+        SUM(CASE WHEN payment_status = 'PAID' THEN 1 ELSE 0 END) AS paid_count,
+        SUM(CASE WHEN payment_status = 'UNPAID' THEN 1 ELSE 0 END) AS unpaid_count,
+        SUM(CASE WHEN payment_status = 'PARTIAL' THEN 1 ELSE 0 END) AS partial_count
+      FROM properties
+      GROUP BY collection_officer;`
+  );
+  runStatement(
+    database,
+    `CREATE VIEW monthly_collection_summary AS
+      SELECT
+        strftime('%Y-%m', last_payment_date) AS payment_month,
+        COUNT(*) AS payment_events,
+        SUM(tax_amount - due_amount) AS collected_amount,
+        SUM(due_amount + water_tax_due + sewerage_tax_due + solid_waste_tax_due) AS outstanding_due,
+        SUM(CASE WHEN payment_status = 'PAID' THEN 1 ELSE 0 END) AS paid_count,
+        SUM(CASE WHEN payment_status = 'PARTIAL' THEN 1 ELSE 0 END) AS partial_count
+      FROM properties
+      WHERE last_payment_date IS NOT NULL
+      GROUP BY strftime('%Y-%m', last_payment_date);`
+  );
+  runStatement(
+    database,
+    `CREATE VIEW yearly_collection_summary AS
+      SELECT
+        strftime('%Y', last_payment_date) AS payment_year,
+        COUNT(*) AS payment_events,
+        SUM(tax_amount - due_amount) AS collected_amount,
+        SUM(due_amount + water_tax_due + sewerage_tax_due + solid_waste_tax_due) AS outstanding_due,
+        SUM(CASE WHEN payment_status = 'PAID' THEN 1 ELSE 0 END) AS paid_count,
+        SUM(CASE WHEN payment_status = 'PARTIAL' THEN 1 ELSE 0 END) AS partial_count
+      FROM properties
+      WHERE last_payment_date IS NOT NULL
+      GROUP BY strftime('%Y', last_payment_date);`
+  );
+}
+
+function syncSeedProperties(database: any, properties: PropertyRecord[]): number {
+  const existingPropertyIds = new Set(
+    getExecRows<{ property_id: number }>(
+      database.exec('SELECT property_id FROM properties;')
+    ).map((row) => Number(row.property_id))
   );
 
-  if ((existingRows[0]?.count || 0) > 0) {
-    createWardCollectionView(database);
-    return false;
-  }
-
-  const properties = await getDemoProperties();
   const insertStatement = database.prepare(
     `INSERT INTO properties (
       property_id,
       owner_name,
       ward,
       zone,
+      collection_officer,
       property_address,
       tax_amount,
       due_amount,
@@ -119,16 +222,32 @@ async function ensureDatabaseSchema(database: any) {
       solid_waste_tax_due,
       last_payment_date,
       payment_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
   );
+  const updateOfficerStatement = database.prepare(
+    `UPDATE properties
+      SET collection_officer = ?
+      WHERE property_id = ?;`
+  );
+
+  let insertedRows = 0;
 
   try {
     for (const property of properties) {
+      if (existingPropertyIds.has(property.property_id)) {
+        updateOfficerStatement.run([
+          property.collection_officer,
+          property.property_id,
+        ]);
+        continue;
+      }
+
       insertStatement.run([
         property.property_id,
         property.owner_name,
         property.ward,
         property.zone,
+        property.collection_officer,
         property.property_address,
         property.tax_amount,
         property.due_amount,
@@ -138,32 +257,21 @@ async function ensureDatabaseSchema(database: any) {
         property.last_payment_date,
         property.payment_status,
       ]);
+
+      insertedRows += 1;
     }
   } finally {
     insertStatement.free();
+    updateOfficerStatement.free();
   }
 
-  createWardCollectionView(database);
-  return true;
-}
+  if (insertedRows > 0) {
+    console.log(
+      `[DB] Added ${insertedRows} additional seeded properties to enrich analytics coverage.`
+    );
+  }
 
-function createWardCollectionView(database: any) {
-  runStatement(database, 'DROP VIEW IF EXISTS ward_collection_summary;');
-  runStatement(
-    database,
-    `CREATE VIEW ward_collection_summary AS
-      SELECT
-        ward,
-        COUNT(*) AS total_properties,
-        SUM(tax_amount) AS total_tax,
-        SUM(due_amount) AS total_due,
-        SUM(tax_amount - due_amount) AS total_collected,
-        SUM(CASE WHEN payment_status = 'PAID' THEN 1 ELSE 0 END) AS paid_count,
-        SUM(CASE WHEN payment_status = 'UNPAID' THEN 1 ELSE 0 END) AS unpaid_count,
-        SUM(CASE WHEN payment_status = 'PARTIAL' THEN 1 ELSE 0 END) AS partial_count
-      FROM properties
-      GROUP BY ward;`
-  );
+  return insertedRows;
 }
 
 async function persistDatabase(database: any) {
@@ -181,6 +289,7 @@ function ensureIntegratedTaxColumns(database: any) {
     'water_tax_due REAL NOT NULL DEFAULT 0',
     'sewerage_tax_due REAL NOT NULL DEFAULT 0',
     'solid_waste_tax_due REAL NOT NULL DEFAULT 0',
+    "collection_officer TEXT NOT NULL DEFAULT 'Officer Anita Patil'",
   ];
 
   for (const columnDefinition of requiredColumns) {
@@ -314,6 +423,7 @@ export async function getAllProperties(): Promise<PropertyRecord[]> {
       owner_name,
       ward,
       zone,
+      collection_officer,
       property_address,
       tax_amount,
       due_amount,
@@ -363,6 +473,49 @@ export async function getSchemaInfo(): Promise<string> {
     schemaInfo += '  - unpaid_count (INTEGER)\n';
     schemaInfo += '  - partial_count (INTEGER)\n';
 
+    schemaInfo += '\nView: zone_collection_summary\n';
+    schemaInfo += '  - zone (TEXT)\n';
+    schemaInfo += '  - total_properties (INTEGER)\n';
+    schemaInfo += '  - total_tax (REAL)\n';
+    schemaInfo += '  - total_due (REAL)\n';
+    schemaInfo += '  - total_collected (REAL)\n';
+    schemaInfo += '  - paid_count (INTEGER)\n';
+    schemaInfo += '  - unpaid_count (INTEGER)\n';
+    schemaInfo += '  - partial_count (INTEGER)\n';
+
+    schemaInfo += '\nView: payment_status_summary\n';
+    schemaInfo += '  - payment_status (TEXT)\n';
+    schemaInfo += '  - property_count (INTEGER)\n';
+    schemaInfo += '  - total_tax (REAL)\n';
+    schemaInfo += '  - total_due (REAL)\n';
+
+    schemaInfo += '\nView: officer_collection_summary\n';
+    schemaInfo += '  - collection_officer (TEXT)\n';
+    schemaInfo += '  - total_properties (INTEGER)\n';
+    schemaInfo += '  - total_tax (REAL)\n';
+    schemaInfo += '  - total_due (REAL)\n';
+    schemaInfo += '  - total_collected (REAL)\n';
+    schemaInfo += '  - collection_efficiency_pct (REAL)\n';
+    schemaInfo += '  - paid_count (INTEGER)\n';
+    schemaInfo += '  - unpaid_count (INTEGER)\n';
+    schemaInfo += '  - partial_count (INTEGER)\n';
+
+    schemaInfo += '\nView: monthly_collection_summary\n';
+    schemaInfo += '  - payment_month (TEXT)\n';
+    schemaInfo += '  - payment_events (INTEGER)\n';
+    schemaInfo += '  - collected_amount (REAL)\n';
+    schemaInfo += '  - outstanding_due (REAL)\n';
+    schemaInfo += '  - paid_count (INTEGER)\n';
+    schemaInfo += '  - partial_count (INTEGER)\n';
+
+    schemaInfo += '\nView: yearly_collection_summary\n';
+    schemaInfo += '  - payment_year (TEXT)\n';
+    schemaInfo += '  - payment_events (INTEGER)\n';
+    schemaInfo += '  - collected_amount (REAL)\n';
+    schemaInfo += '  - outstanding_due (REAL)\n';
+    schemaInfo += '  - paid_count (INTEGER)\n';
+    schemaInfo += '  - partial_count (INTEGER)\n';
+
     return schemaInfo;
   } catch (error) {
     console.error('[DB] Schema fetch error:', error);
@@ -379,6 +532,7 @@ Table: properties
   - water_tax_due (REAL) [NOT NULL]
   - sewerage_tax_due (REAL) [NOT NULL]
   - solid_waste_tax_due (REAL) [NOT NULL]
+  - collection_officer (TEXT) [NOT NULL]
   - last_payment_date (TEXT)
   - payment_status (TEXT) [NOT NULL]`;
   }
@@ -426,6 +580,28 @@ export function validateSQLQuery(sql: string): {
       valid: false,
       message: 'Suspicious query pattern detected',
     };
+  }
+
+  const allowedRelations = new Set([
+    'PROPERTIES',
+    'WARD_COLLECTION_SUMMARY',
+    'ZONE_COLLECTION_SUMMARY',
+    'PAYMENT_STATUS_SUMMARY',
+    'OFFICER_COLLECTION_SUMMARY',
+    'MONTHLY_COLLECTION_SUMMARY',
+    'YEARLY_COLLECTION_SUMMARY',
+  ]);
+  const referencedRelations = [
+    ...upperSQL.matchAll(/\b(?:FROM|JOIN)\s+([A-Z_][A-Z0-9_]*)\b/g),
+  ].map((match) => match[1]);
+
+  for (const relationName of referencedRelations) {
+    if (!allowedRelations.has(relationName)) {
+      return {
+        valid: false,
+        message: `Query references unknown table or view: ${relationName.toLowerCase()}.`,
+      };
+    }
   }
 
   return {

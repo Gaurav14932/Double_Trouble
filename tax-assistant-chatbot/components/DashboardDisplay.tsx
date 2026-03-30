@@ -17,6 +17,8 @@ import {
 } from 'recharts';
 import DataTable from '@/components/DataTable';
 import { DashboardData } from '@/lib/chat-types';
+import { AppLanguage } from '@/lib/language';
+import { getInterfaceLabels } from '@/lib/ui-localization';
 
 const WardHeatMap = dynamic(() => import('@/components/WardHeatMap'), {
   ssr: false,
@@ -30,6 +32,7 @@ const WardHeatMap = dynamic(() => import('@/components/WardHeatMap'), {
 interface DashboardDisplayProps {
   dashboard: DashboardData;
   tableData: Record<string, unknown>[];
+  language: AppLanguage;
 }
 
 const toneClasses: Record<
@@ -45,7 +48,10 @@ const toneClasses: Record<
 export default function DashboardDisplay({
   dashboard,
   tableData,
+  language,
 }: DashboardDisplayProps) {
+  const labels = getInterfaceLabels(language);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -115,11 +121,11 @@ export default function DashboardDisplay({
         </div>
       </div>
 
-      {dashboard.map ? <WardHeatMap map={dashboard.map} /> : null}
+      {dashboard.map ? <WardHeatMap map={dashboard.map} language={language} /> : null}
 
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-          Summary Insights
+          {labels.summaryInsights}
         </h4>
         <div className="mt-4 grid gap-3">
           {dashboard.insights.map((insight) => (
@@ -137,7 +143,7 @@ export default function DashboardDisplay({
         <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
           {dashboard.tableTitle}
         </h4>
-        <DataTable data={tableData} />
+        <DataTable data={tableData} language={language} />
       </div>
     </div>
   );

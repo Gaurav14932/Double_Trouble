@@ -1,6 +1,9 @@
 import React from 'react';
+import { AppLanguage } from '@/lib/language';
+import { getLocale } from '@/lib/ui-localization';
 
 interface MessageBubbleProps {
+  language: AppLanguage;
   message: {
     type: 'user' | 'assistant';
     content: string;
@@ -8,13 +11,7 @@ interface MessageBubbleProps {
   };
 }
 
-const timeFormatter = new Intl.DateTimeFormat('en-US', {
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: true,
-});
-
-function formatTimestamp(timestamp?: string) {
+function formatTimestamp(timestamp: string | undefined, language: AppLanguage) {
   if (!timestamp) {
     return null;
   }
@@ -24,12 +21,19 @@ function formatTimestamp(timestamp?: string) {
     return null;
   }
 
-  return timeFormatter.format(parsedTimestamp);
+  return new Intl.DateTimeFormat(getLocale(language), {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(parsedTimestamp);
 }
 
-export default function MessageBubble({ message }: MessageBubbleProps) {
+export default function MessageBubble({
+  message,
+  language,
+}: MessageBubbleProps) {
   const isUser = message.type === 'user';
-  const timestampLabel = formatTimestamp(message.timestamp);
+  const timestampLabel = formatTimestamp(message.timestamp, language);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>

@@ -9,7 +9,7 @@ export default function Home() {
   const [language, setLanguage] = useState<AppLanguage>('en');
 
   return (
-    <main className="h-screen flex flex-col bg-background">
+    <main className="h-screen min-h-0 overflow-hidden flex flex-col bg-background">
       <Header language={language} onLanguageChange={setLanguage} />
       <ChatInterface language={language} />
     </main>

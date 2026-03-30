@@ -198,7 +198,7 @@ export async function processChatMessage(input: {
         payload: {
           success: true,
           reply:
-            'AI query generation is temporarily unavailable right now. Built-in queries like top defaulters, dashboards, payment status, integrated tax summary, predictive defaulters, and ward-wise collection reports still work.',
+            'AI query generation is temporarily unavailable right now. Built-in queries like top defaulters, dashboards, payment status, integrated tax summary, predictive defaulters, next-year default forecasts, penalty-waiver simulations, collection efficiency, outstanding hotspots, officer leaderboards, recovery priority lists, stale accounts, trend anomaly scans, and ward-wise collection reports still work.',
         },
       };
     }

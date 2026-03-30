@@ -8,6 +8,7 @@ import ResultsDisplay from '@/components/ResultsDisplay';
 import { Send, Loader, Mic, Square } from 'lucide-react';
 import { ChatResponseData } from '@/lib/chat-types';
 import { AppLanguage, FEATURED_QUERIES, getUiCopy } from '@/lib/language';
+import { getInterfaceLabels } from '@/lib/ui-localization';
 
 interface Message {
   id: string;
@@ -42,9 +43,11 @@ interface ChatInterfaceProps {
 
 export default function ChatInterface({ language }: ChatInterfaceProps) {
   const uiCopy = getUiCopy(language);
+  const interfaceLabels = getInterfaceLabels(language);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isRefreshingLanguage, setIsRefreshingLanguage] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState('');
@@ -57,11 +60,19 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
   const isListeningRef = useRef(false);
   const historyIndexRef = useRef(0);
   const pendingRequestIdRef = useRef(0);
+  const previousLanguageRef = useRef(language);
   const sendMessageRef = useRef<(query: string) => Promise<void>>(async () => {});
 
   // Auto-scroll to latest message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length === 0) {
+      return;
+    }
+
+    messagesEndRef.current?.scrollIntoView({
+      behavior: messages.length > 1 ? 'smooth' : 'auto',
+      block: 'end',
+    });
   }, [messages]);
 
   useEffect(() => {
@@ -142,6 +153,34 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
         ''
       );
   };
+
+  const replaceHistorySnapshot = (snapshot: ChatHistorySnapshot) => {
+    if (typeof window === 'undefined') return;
+
+    window.history.replaceState(
+      {
+        ...(window.history.state ?? {}),
+        chatView: snapshot,
+        chatHistoryIndex: historyIndexRef.current,
+      },
+      ''
+    );
+  };
+
+  const buildAssistantMessage = (
+    payload: {
+      reply?: string;
+      data?: ChatResponseData;
+    },
+    previousAssistant?: Message
+  ): Message => ({
+    id: previousAssistant?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    type: 'assistant',
+    content:
+      payload.reply || payload.data?.explanation || 'Query executed successfully',
+    data: payload.data,
+    timestamp: previousAssistant?.timestamp ?? new Date().toISOString(),
+  });
 
   const handleSendMessage = async (query: string) => {
     const normalizedQuery = normalizeMessage(query);
@@ -236,6 +275,98 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
   };
 
   sendMessageRef.current = handleSendMessage;
+
+  useEffect(() => {
+    if (previousLanguageRef.current === language) {
+      return;
+    }
+
+    previousLanguageRef.current = language;
+
+    if (messagesRef.current.length === 0) {
+      return;
+    }
+
+    const refreshConversationLanguage = async () => {
+      const refreshRequestId = pendingRequestIdRef.current + 1;
+      pendingRequestIdRef.current = refreshRequestId;
+      setLoading(true);
+      setIsRefreshingLanguage(true);
+
+      const existingMessages = [...messagesRef.current];
+      const rebuiltMessages: Message[] = [];
+
+      for (let index = 0; index < existingMessages.length; index += 1) {
+        const currentMessage = existingMessages[index];
+
+        if (currentMessage.type !== 'user') {
+          rebuiltMessages.push(currentMessage);
+          continue;
+        }
+
+        rebuiltMessages.push(currentMessage);
+        const nextMessage = existingMessages[index + 1];
+        const previousAssistant =
+          nextMessage?.type === 'assistant' ? nextMessage : undefined;
+
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: normalizeMessage(currentMessage.content),
+              language,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to process query');
+          }
+
+          if (pendingRequestIdRef.current !== refreshRequestId) {
+            return;
+          }
+
+          rebuiltMessages.push(
+            buildAssistantMessage(
+              {
+                reply: data.reply,
+                data: data.data,
+              },
+              previousAssistant
+            )
+          );
+        } catch {
+          if (previousAssistant) {
+            rebuiltMessages.push(previousAssistant);
+          }
+        }
+
+        if (previousAssistant) {
+          index += 1;
+        }
+      }
+
+      if (pendingRequestIdRef.current !== refreshRequestId) {
+        return;
+      }
+
+      messagesRef.current = rebuiltMessages;
+      setMessages(rebuiltMessages);
+      replaceHistorySnapshot({
+        messages: rebuiltMessages,
+        input,
+      });
+      setLoading(false);
+      setIsRefreshingLanguage(false);
+    };
+
+    void refreshConversationLanguage();
+  }, [input, language]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -385,9 +516,9 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="flex-1 min-h-0 flex flex-col bg-white">
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="min-h-full flex flex-col">
             <div className="flex-1 flex items-center">
@@ -425,10 +556,10 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
 
         {messages.map((msg) => (
           <div key={msg.id} className="flex flex-col">
-            <MessageBubble message={msg} />
+            <MessageBubble message={msg} language={language} />
             {msg.data && msg.type === 'assistant' && (
               <div className="mt-3 ml-0">
-                <ResultsDisplay data={msg.data} />
+                <ResultsDisplay data={msg.data} language={language} />
               </div>
             )}
           </div>
@@ -437,7 +568,11 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
         {loading && (
           <div className="flex items-center gap-2 text-gray-600">
             <Loader className="w-4 h-4 animate-spin" />
-            <span>Processing your query...</span>
+            <span>
+              {isRefreshingLanguage
+                ? interfaceLabels.updatingLanguage
+                : interfaceLabels.processingQuery}
+            </span>
           </div>
         )}
 
