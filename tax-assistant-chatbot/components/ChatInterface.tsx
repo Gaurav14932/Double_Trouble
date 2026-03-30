@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import MessageBubble from '@/components/MessageBubble';
 import ResultsDisplay from '@/components/ResultsDisplay';
-import { Send, Loader, Mic, Square, ArrowLeft } from 'lucide-react';
+import { Send, Loader, Mic, Square } from 'lucide-react';
 import { ChatResponseData } from '@/lib/chat-types';
 import { AppLanguage, FEATURED_QUERIES, getUiCopy } from '@/lib/language';
 
@@ -45,7 +45,6 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [canGoBack, setCanGoBack] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState('');
@@ -79,7 +78,6 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
         : 0;
 
     historyIndexRef.current = historyIndex;
-    setCanGoBack(historyIndex > 0);
 
     if (snapshot) {
       messagesRef.current = snapshot.messages;
@@ -120,7 +118,6 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
       setInput(nextSnapshot.input);
       setLoading(false);
       setSpeechError('');
-      setCanGoBack(nextIndex > 0);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -135,7 +132,6 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
 
     const nextIndex = historyIndexRef.current + 1;
     historyIndexRef.current = nextIndex;
-    setCanGoBack(true);
 
     window.history.pushState(
       {
@@ -143,20 +139,8 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
         chatView: snapshot,
         chatHistoryIndex: nextIndex,
       },
-      ''
-    );
-  };
-
-  const goBackToPreviousView = () => {
-    if (typeof window === 'undefined' || !canGoBack || loading) {
-      return;
-    }
-
-    if (isListeningRef.current) {
-      recognitionRef.current?.stop();
-    }
-
-    window.history.back();
+        ''
+      );
   };
 
   const handleSendMessage = async (query: string) => {
@@ -404,23 +388,6 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
     <div className="flex-1 flex flex-col bg-white">
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={goBackToPreviousView}
-              disabled={!canGoBack || loading}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <p className="text-sm text-gray-500">Go to the previous search view</p>
-          </div>
-        </div>
-
         {messages.length === 0 && (
           <div className="min-h-full flex flex-col">
             <div className="flex-1 flex items-center">
