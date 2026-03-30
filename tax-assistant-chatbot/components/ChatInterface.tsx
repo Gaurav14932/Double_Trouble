@@ -527,9 +527,11 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
                   <h2 className="text-2xl font-semibold text-gray-800 mb-2">
                     {uiCopy.emptyTitle}
                   </h2>
-                  <p className="text-gray-600 mb-6">
-                    {uiCopy.emptySubtitle}
-                  </p>
+                  <p className="text-gray-600 mb-4">{uiCopy.emptySubtitle}</p>
+
+                  <div className="mx-auto max-w-2xl rounded-lg bg-gray-100 px-5 py-4 text-sm text-gray-700 shadow-sm text-left">
+                    {uiCopy.welcomeMessage}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto">
@@ -543,12 +545,6 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
                     </button>
                   ))}
                 </div>
-              </div>
-            </div>
-
-            <div className="flex justify-center pb-6">
-              <div className="max-w-2xl rounded-lg bg-gray-100 px-5 py-4 text-sm text-gray-700 shadow-sm">
-                {uiCopy.welcomeMessage}
               </div>
             </div>
           </div>
