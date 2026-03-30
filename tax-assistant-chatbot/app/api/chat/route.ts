@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { convertToSQL, determineQueryType } from '@/lib/gemini';
+import {
+  convertToSQL,
+  determineQueryType,
+  getLLMRuntimeInfo,
+} from '@/lib/llm';
 import { getAllProperties, getDatabaseStatus, query, validateSQLQuery } from '@/lib/db';
 import { getUserFriendlyMessage } from '@/lib/errors';
 import { runDemoQuery } from '@/lib/demo-query';
@@ -18,6 +22,7 @@ export const runtime = 'nodejs';
  */
 export async function POST(request: NextRequest) {
   try {
+    const llmRuntime = getLLMRuntimeInfo();
     const { message, language } = (await request.json()) as {
       message?: string;
       language?: AppLanguage;
@@ -89,8 +94,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Step 1: Convert natural language to SQL using Gemini
-    console.log('[API] Converting to SQL...');
+    // Step 1: Convert natural language to SQL using the configured LLM provider
+    console.log(
+      `[API] Converting to SQL using ${llmRuntime.provider} (${llmRuntime.model})...`
+    );
     let sql: string;
     let intent: string;
     let explanation: string;
@@ -101,7 +108,10 @@ export async function POST(request: NextRequest) {
       intent = generated.intent;
       explanation = generated.explanation;
     } catch (error) {
-      console.warn('[API] Gemini conversion unavailable, returning graceful fallback:', error);
+      console.warn(
+        '[API] LLM conversion unavailable, returning graceful fallback:',
+        error
+      );
 
       return NextResponse.json({
         success: true,
@@ -145,6 +155,10 @@ export async function POST(request: NextRequest) {
         resultCount: results.length,
         query: sql, // Include SQL for transparency
         source: 'database',
+      },
+      llm: {
+        provider: llmRuntime.provider,
+        model: llmRuntime.model,
       },
     });
   } catch (error) {

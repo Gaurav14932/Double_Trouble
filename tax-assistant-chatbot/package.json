@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "llm:local:start": "powershell -ExecutionPolicy Bypass -File .\\scripts\\start-local-llm.ps1"
   },
   "dependencies": {
     "@google/generative-ai": "^0.3.1",

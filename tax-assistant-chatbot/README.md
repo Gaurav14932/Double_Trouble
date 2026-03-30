@@ -1,6 +1,6 @@
 # AI-Powered Property Tax Assistant Chatbot
 
-A full-stack web application that enables municipal officials to query property tax data using natural language. Powered by Google Generative AI (Gemini), this chatbot converts natural language questions into SQL queries and visualizes results in tables and charts.
+A full-stack web application that enables municipal officials to query property tax data using natural language. The app now includes a configurable LLM layer: it uses Google Gemini by default, and can also be switched to Ollama or any OpenAI-compatible endpoint for SQL generation.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -22,7 +22,10 @@ A full-stack web application that enables municipal officials to query property 
 ### Prerequisites
 - Node.js 18+
 - MySQL 8.0+
-- Google Generative AI API Key (free)
+- One LLM provider:
+  - Google Generative AI API key, or
+  - a local Ollama model, or
+  - any OpenAI-compatible API endpoint
 
 ### 1. Install Dependencies
 ```bash
@@ -38,6 +41,8 @@ mysql -u root -p < scripts/init-database.sql
 ### 3. Configure Environment
 Create `.env.local`:
 ```env
+LLM_PROVIDER=gemini
+
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
@@ -45,6 +50,24 @@ DB_PASSWORD=root
 DB_NAME=property_tax_db
 
 GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here
+GOOGLE_GENERATIVE_AI_MODEL=gemini-2.5-flash
+```
+
+To use a local or self-hosted model instead, copy from `.env.local.example` and set either:
+
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=llama3.1:8b
+```
+
+or:
+
+```env
+LLM_PROVIDER=openai-compatible
+OPENAI_COMPATIBLE_BASE_URL=http://127.0.0.1:8000/v1
+OPENAI_COMPATIBLE_MODEL=your-model-name
+OPENAI_COMPATIBLE_API_KEY=optional
 ```
 
 ### 4. Run Development Server
@@ -53,6 +76,26 @@ npm run dev
 ```
 
 Visit **http://localhost:3000**
+
+## Run With A Local LLM
+
+This project can run without Gemini by using the built-in OpenAI-compatible local backend support.
+
+1. Start the local model server:
+```bash
+npm run llm:local:start
+```
+
+2. Keep `.env.local` configured like this:
+```env
+LLM_PROVIDER=openai-compatible
+OPENAI_COMPATIBLE_BASE_URL=http://127.0.0.1:8000/v1
+OPENAI_COMPATIBLE_MODEL=local-tax-sql
+```
+
+The helper script looks for a GGUF model at:
+- `%USERPROFILE%\\models\\qwen2.5-0.5b-instruct-q4_k_m.gguf`
+- or `data/models/qwen2.5-0.5b-instruct-q4_k_m.gguf`
 
 ## Example Queries
 
@@ -109,8 +152,9 @@ Visit **http://localhost:3000**
 - Connection pooling via mysql2
 
 **AI**
-- Google Generative AI API
-- Gemini Pro model
+- Configurable LLM provider layer
+- Gemini by default
+- Optional Ollama or OpenAI-compatible backend
 
 ### System Flow
 

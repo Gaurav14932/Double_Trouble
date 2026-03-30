@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDatabaseStatus, query } from '@/lib/db';
 import { getDemoProperties } from '@/lib/demo-data';
+import { getLLMRuntimeInfo } from '@/lib/llm';
 
 export const runtime = 'nodejs';
 
@@ -10,6 +11,7 @@ export const runtime = 'nodejs';
  */
 export async function GET() {
   try {
+    const llmRuntime = getLLMRuntimeInfo();
     const databaseStatus = await getDatabaseStatus();
 
     if (databaseStatus.connected) {
@@ -21,6 +23,7 @@ export async function GET() {
         message: 'API and SQLite database are operational',
         timestamp: new Date().toISOString(),
         propertiesCount: result[0]?.count || 0,
+        llm: llmRuntime,
       });
     }
 
@@ -33,6 +36,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       propertiesCount: demoProperties.length,
       details: databaseStatus.message,
+      llm: llmRuntime,
     });
   } catch (error) {
     console.error('[Health] Database check failed:', error);

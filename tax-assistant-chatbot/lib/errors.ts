@@ -28,11 +28,21 @@ export class AIGenerationError extends Error {
  */
 export function getUserFriendlyMessage(error: Error): string {
   if (error.message.includes('ECONNREFUSED')) {
-    return 'Database connection failed. Please check if MySQL is running.';
+    return 'A required local service is not reachable. Please check your database or local LLM service.';
   }
 
   if (error.message.includes('GOOGLE_GENERATIVE_AI_API_KEY')) {
     return 'API key not configured. Please set your Google Generative AI API key.';
+  }
+
+  if (
+    error.message.includes('OLLAMA_MODEL') ||
+    error.message.includes('OPENAI_COMPATIBLE_MODEL') ||
+    error.message.includes('LLM provider') ||
+    error.message.includes('OpenAI-compatible request failed') ||
+    error.message.includes('Ollama request failed')
+  ) {
+    return 'LLM configuration is incomplete or unavailable. Check your selected provider settings.';
   }
 
   if (
