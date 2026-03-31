@@ -2488,8 +2488,8 @@ function buildWardHeatMapData(
   }
 
   const wards = [...grouped.entries()]
-    .map(([wardName, totals]) => {
-      const coordinates = getWardCoordinates(wardName);
+    .map(([wardName, totals], index) => {
+      const coordinates = getWardCoordinates(wardName, index);
 
       return {
         ward: wardName,
@@ -2533,7 +2533,9 @@ function buildWardHeatMapData(
   };
 }
 
-function getWardCoordinates(ward: string): [number, number] {
+const DEFAULT_WARD_CENTER: [number, number] = [18.521, 73.857];
+
+function getWardCoordinates(ward: string, index = 0): [number, number] {
   const wardCoordinates: Record<string, [number, number]> = {
     'Ward 1': [18.536, 73.847],
     'Ward 2': [18.531, 73.862],
@@ -2542,12 +2544,28 @@ function getWardCoordinates(ward: string): [number, number] {
     'Ward 5': [18.518, 73.849],
   };
 
-  return wardCoordinates[ward] ?? [18.521, 73.857];
+  const knownCoordinates = wardCoordinates[ward];
+
+  if (knownCoordinates) {
+    return knownCoordinates;
+  }
+
+  const angle = (index % 8) * (Math.PI / 4);
+  const distance = 0.007 + Math.floor(index / 8) * 0.004;
+
+  return [
+    roundCoordinate(DEFAULT_WARD_CENTER[0] + Math.sin(angle) * distance),
+    roundCoordinate(DEFAULT_WARD_CENTER[1] + Math.cos(angle) * distance),
+  ];
 }
 
 function calculateMapCenter(
   wards: Array<{ lat: number; lng: number }>
 ): [number, number] {
+  if (wards.length === 0) {
+    return DEFAULT_WARD_CENTER;
+  }
+
   const totals = wards.reduce(
     (current, ward) => {
       current.lat += ward.lat;
@@ -2558,6 +2576,10 @@ function calculateMapCenter(
   );
 
   return [totals.lat / wards.length, totals.lng / wards.length];
+}
+
+function roundCoordinate(value: number) {
+  return Number(value.toFixed(6));
 }
 
 function getSourceLabel(source: DataSource, language: AppLanguage): string {
