@@ -147,9 +147,6 @@ Example:
 /en Show top 10 defaulters in Ward 5
 ```
 
-## Deployment Note
-
-The app can be deployed to Vercel, but the current SQLite file persistence is best suited to local use. For a real production deployment on Vercel, move the persistent data layer to an external database or storage-backed service.
 
 ## Project Docs
 
@@ -162,7 +159,5 @@ Additional documentation is inside `TaxBot-main/tax-assistant-chatbot`:
 - `PROJECT_SUMMARY.md`
 - `INDEX.md`
 
-## License
 
-Add your preferred license here before publishing publicly.
 
