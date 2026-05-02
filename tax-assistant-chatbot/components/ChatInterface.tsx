@@ -9,6 +9,11 @@ import { Send, Loader, Mic, Square } from 'lucide-react';
 import { ChatResponseData } from '@/lib/chat-types';
 import { AppLanguage, FEATURED_QUERIES, getUiCopy } from '@/lib/language';
 import { getInterfaceLabels } from '@/lib/ui-localization';
+import {
+  EmployeeSession,
+  getEmployeeRoleLabel,
+  getEmployeeScopeLabel,
+} from '@/lib/employee-auth';
 
 interface Message {
   id: string;
@@ -39,9 +44,10 @@ function getSpeechRecognitionLanguage(language: AppLanguage) {
 
 interface ChatInterfaceProps {
   language: AppLanguage;
+  employee?: EmployeeSession | null;
 }
 
-export default function ChatInterface({ language }: ChatInterfaceProps) {
+export default function ChatInterface({ language, employee }: ChatInterfaceProps) {
   const uiCopy = getUiCopy(language);
   const interfaceLabels = getInterfaceLabels(language);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -524,6 +530,15 @@ export default function ChatInterface({ language }: ChatInterfaceProps) {
             <div className="flex-1 flex items-center">
               <div className="w-full mt-8 space-y-6">
                 <div className="text-center">
+                  {employee ? (
+                    <div className="mx-auto mb-5 flex max-w-2xl flex-wrap items-center justify-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-medium text-sky-800">
+                      <span>{employee.displayName}</span>
+                      <span className="text-sky-300">•</span>
+                      <span>{getEmployeeRoleLabel(employee.role, language)}</span>
+                      <span className="text-sky-300">•</span>
+                      <span>{getEmployeeScopeLabel(employee, language)}</span>
+                    </div>
+                  ) : null}
                   <h2 className="text-2xl font-semibold text-gray-800 mb-2">
                     {uiCopy.emptyTitle}
                   </h2>

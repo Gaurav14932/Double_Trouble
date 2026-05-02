@@ -1,12 +1,26 @@
 import Image from 'next/image';
+import { LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { AppLanguage, getUiCopy, LANGUAGE_OPTIONS } from '@/lib/language';
+import {
+  EmployeeSession,
+  getEmployeeRoleLabel,
+  getEmployeeScopeLabel,
+} from '@/lib/employee-auth';
 
 interface HeaderProps {
   language: AppLanguage;
   onLanguageChange: (language: AppLanguage) => void;
+  employee?: EmployeeSession | null;
+  onLogout?: () => void;
 }
 
-export default function Header({ language, onLanguageChange }: HeaderProps) {
+export default function Header({
+  language,
+  onLanguageChange,
+  employee,
+  onLogout,
+}: HeaderProps) {
   const uiCopy = getUiCopy(language);
 
   return (
@@ -39,22 +53,54 @@ export default function Header({ language, onLanguageChange }: HeaderProps) {
           <p className="mt-3 text-sm text-gray-600">{uiCopy.headerSubtitle}</p>
         </div>
 
-        <label className="flex items-center gap-3 text-sm text-gray-700">
-          <span className="font-medium">{uiCopy.languageLabel}</span>
-          <select
-            value={language}
-            onChange={(event) =>
-              onLanguageChange(event.target.value as AppLanguage)
-            }
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          >
-            {LANGUAGE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex flex-col items-start gap-3 md:items-end">
+          {employee ? (
+            <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-slate-700 shadow-sm">
+              <p className="font-semibold text-slate-900">{employee.displayName}</p>
+              <p className="mt-1 text-xs uppercase tracking-[0.16em] text-sky-700">
+                {employee.employeeId} • {getEmployeeRoleLabel(employee.role, language)}
+              </p>
+              <p className="mt-2 text-xs text-slate-600">
+                {getEmployeeScopeLabel(employee, language)}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700">
+            <label className="flex items-center gap-3 text-sm text-gray-700">
+              <span className="font-medium">{uiCopy.languageLabel}</span>
+              <select
+                value={language}
+                onChange={(event) =>
+                  onLanguageChange(event.target.value as AppLanguage)
+                }
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {employee && onLogout ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onLogout}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                {language === 'hi'
+                  ? 'लॉगआउट'
+                  : language === 'mr'
+                    ? 'लॉगआउट'
+                    : 'Logout'}
+              </Button>
+            ) : null}
+          </div>
+        </div>
       </div>
     </header>
   );
