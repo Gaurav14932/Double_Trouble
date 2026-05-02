@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import { DashboardData } from '@/lib/chat-types';
+import { DashboardData, DashboardMapPoint } from '@/lib/chat-types';
 import { AppLanguage } from '@/lib/language';
 import { getInterfaceLabels } from '@/lib/ui-localization';
 
@@ -13,40 +13,65 @@ interface WardHeatMapProps {
 
 export default function WardHeatMap({ map, language }: WardHeatMapProps) {
   const labels = getInterfaceLabels(language);
+  const {
+    highlightedReportArea,
+    pendingTax,
+    propertiesCovered,
+  } = labels;
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const maxPendingTax = useMemo(
-    () => Math.max(...map.wards.map((ward) => ward.pendingTax), 1),
-    [map.wards]
-  );
-  const totalPendingTax = useMemo(
-    () => map.wards.reduce((sum, ward) => sum + ward.pendingTax, 0),
-    [map.wards]
-  );
-  const averagePendingTax = totalPendingTax / Math.max(map.wards.length, 1);
-  const hottestWard = useMemo(
-    () =>
-      map.wards.reduce((current, candidate) =>
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const hasWardData = map.wards.length > 0;
+  const maxPendingTax = hasWardData
+    ? Math.max(...map.wards.map((ward) => ward.pendingTax), 1)
+    : 1;
+  const totalPendingTax = map.wards.reduce((sum, ward) => sum + ward.pendingTax, 0);
+  const averagePendingTax = hasWardData
+    ? totalPendingTax / map.wards.length
+    : 0;
+  const hottestWard = hasWardData
+    ? map.wards.reduce((current, candidate) =>
         candidate.pendingTax > current.pendingTax ? candidate : current
-      ),
-    [map.wards]
-  );
+      )
+    : null;
 
   useEffect(() => {
-    if (!mapContainerRef.current || map.wards.length === 0) {
+    const container = mapContainerRef.current;
+
+    if (!container) {
       return;
     }
 
-    const mapInstance = L.map(mapContainerRef.current, {
+    const cleanupMap = () => {
+      mapInstanceRef.current?.off();
+      mapInstanceRef.current?.remove();
+      mapInstanceRef.current = null;
+      resetLeafletContainer(container);
+    };
+
+    cleanupMap();
+
+    if (!hasWardData) {
+      return cleanupMap;
+    }
+
+    const mapInstance = L.map(container, {
       center: map.center,
       zoom: map.zoom,
-      scrollWheelZoom: false,
+      scrollWheelZoom: true,
       zoomControl: false,
+      dragging: true,
+      doubleClickZoom: true,
+      touchZoom: true,
+      keyboard: true,
+      maxZoom: 18,
     });
+    mapInstanceRef.current = mapInstance;
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution:
         '&copy; OpenStreetMap contributors &copy; CARTO',
     }).addTo(mapInstance);
+    L.control.zoom({ position: 'topright' }).addTo(mapInstance);
 
     const glowPane = mapInstance.createPane('ward-glow');
     glowPane.style.zIndex = '410';
@@ -60,13 +85,19 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
 
     const bounds = L.latLngBounds([]);
 
-    for (const ward of map.wards) {
+    for (const [index, ward] of map.wards.entries()) {
       const intensity = ward.pendingTax / maxPendingTax;
       const fillColor = getHeatColor(intensity);
+      const wardDetailsContent = buildWardDetailsContent(ward, {
+        highlightedReportArea,
+        pendingTax,
+        propertiesCovered,
+      });
 
       L.circleMarker([ward.lat, ward.lng], {
         pane: 'ward-glow',
         radius: 20 + intensity * 18,
+        interactive: false,
         stroke: false,
         fillColor,
         fillOpacity: 0.14 + intensity * 0.1,
@@ -84,6 +115,7 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
       L.circleMarker([ward.lat, ward.lng], {
         pane: 'ward-points',
         radius: 3.5 + intensity * 2.5,
+        interactive: false,
         color: '#ffffff',
         weight: 1.5,
         fillColor: '#ffffff',
@@ -94,6 +126,7 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
         L.circleMarker([ward.lat, ward.lng], {
           pane: 'ward-glow',
           radius: 28 + intensity * 18,
+          interactive: false,
           color: '#0f172a',
           weight: 1.5,
           fillColor,
@@ -103,7 +136,7 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
         }).addTo(mapInstance);
       }
 
-      const labelOffset = getWardLabelOffset(ward.ward);
+      const labelOffset = getWardLabelOffset(ward.ward, index);
 
       L.marker([ward.lat, ward.lng], {
         pane: 'ward-labels',
@@ -114,37 +147,42 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
           iconAnchor: [labelOffset[0], labelOffset[1]],
           html: `
             <div class="ward-map-label${ward.isFocus ? ' ward-map-label--focus' : ''}">
-              <span class="ward-map-label__name">${ward.ward}</span>
+              <span class="ward-map-label__name">${escapeHtml(ward.ward)}</span>
               <span class="ward-map-label__value">${formatCompactCurrency(ward.pendingTax)}</span>
             </div>
           `,
         }),
       }).addTo(mapInstance);
 
-      circle.bindTooltip(
-        `
-          <div class="ward-map-tooltip__content">
-            <p class="ward-map-tooltip__title">${ward.ward}</p>
-            <p>${labels.pendingTax}: <strong>${formatCurrency(ward.pendingTax)}</strong></p>
-            <p>${labels.propertiesCovered}: <strong>${ward.totalProperties}</strong></p>
-            ${
-              ward.isFocus
-                ? `<p class="ward-map-tooltip__focus">${labels.highlightedReportArea}</p>`
-                : ''
-            }
-          </div>
-        `,
-        {
-          className: 'ward-map-tooltip',
-          direction: 'top',
-          offset: [0, -14],
-          sticky: true,
-        }
-      );
+      circle.bindTooltip(wardDetailsContent, {
+        className: 'ward-map-tooltip',
+        direction: 'top',
+        offset: [0, -14],
+        sticky: true,
+      });
+      circle.bindPopup(wardDetailsContent, {
+        className: 'ward-map-popup',
+        closeButton: false,
+        offset: [0, -12],
+        autoPanPadding: [24, 24],
+        maxWidth: 260,
+      });
+      circle.on('click', () => {
+        mapInstance.flyTo(
+          [ward.lat, ward.lng],
+          Math.max(mapInstance.getZoom(), Math.min(15, map.zoom + 1)),
+          {
+            animate: true,
+            duration: 0.35,
+          }
+        );
+        circle.openPopup();
+      });
 
       L.circleMarker([ward.lat, ward.lng], {
         pane: 'ward-glow',
         radius: 26 + intensity * 14,
+        interactive: false,
         color: fillColor,
         weight: 1,
         fillColor: getHeatColor(intensity),
@@ -157,7 +195,7 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
 
     if (bounds.isValid()) {
       mapInstance.fitBounds(bounds.pad(0.25), {
-        maxZoom: map.zoom,
+        maxZoom: Math.max(map.zoom, 14),
       });
     } else {
       mapInstance.setView(map.center, map.zoom);
@@ -170,7 +208,7 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
           })
         : null;
 
-    resizeObserver?.observe(mapContainerRef.current);
+    resizeObserver?.observe(container);
     const frameId = window.requestAnimationFrame(() => {
       mapInstance.invalidateSize();
     });
@@ -178,9 +216,18 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
     return () => {
       resizeObserver?.disconnect();
       window.cancelAnimationFrame(frameId);
-      mapInstance.remove();
+      cleanupMap();
     };
-  }, [labels.highlightedReportArea, labels.pendingTax, labels.propertiesCovered, language, map.center, map.wards, map.zoom, maxPendingTax]);
+  }, [
+    hasWardData,
+    highlightedReportArea,
+    pendingTax,
+    propertiesCovered,
+    map.center,
+    map.wards,
+    map.zoom,
+    maxPendingTax,
+  ]);
 
   return (
     <div className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
@@ -195,8 +242,16 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
             {labels.highestPendingWard}
           </p>
-          <p className="mt-2 text-base font-semibold">{hottestWard.ward}</p>
-          <p className="text-sm text-rose-200">{formatCurrency(hottestWard.pendingTax)}</p>
+          {hottestWard ? (
+            <>
+              <p className="mt-2 text-base font-semibold">{hottestWard.ward}</p>
+              <p className="text-sm text-rose-200">
+                {formatCurrency(hottestWard.pendingTax)}
+              </p>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-slate-300">{labels.noDataToVisualize}</p>
+          )}
         </div>
       </div>
 
@@ -226,38 +281,99 @@ export default function WardHeatMap({ map, language }: WardHeatMapProps) {
       </div>
 
       <div className="relative mt-5 overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/30">
-        <div
-          className="pointer-events-none absolute inset-0 z-[401] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(244,63,94,0.16),transparent_28%)]"
-          aria-hidden="true"
-        />
-        <div ref={mapContainerRef} className="h-[420px] w-full" />
+        {hasWardData ? (
+          <>
+            <div
+              className="pointer-events-none absolute inset-0 z-[401] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(244,63,94,0.16),transparent_28%)]"
+              aria-hidden="true"
+            />
+            <div ref={mapContainerRef} className="h-[420px] w-full" />
 
-        <div className="pointer-events-none absolute left-4 top-4 z-[500] rounded-2xl border border-white/15 bg-slate-950/72 px-4 py-3 shadow-xl backdrop-blur">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
-            {labels.heatScale}
-          </p>
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-[11px] text-slate-300">{labels.low}</span>
-            <div className="h-2 w-28 rounded-full bg-gradient-to-r from-[#fde68a] via-[#fb923c] to-[#b91c1c]" />
-            <span className="text-[11px] text-slate-300">{labels.high}</span>
-          </div>
-          <p className="mt-2 text-[11px] leading-5 text-slate-400">
-            {labels.heatScaleHint}
-          </p>
-        </div>
+            <div className="pointer-events-none absolute left-4 top-4 z-[500] rounded-2xl border border-white/15 bg-slate-950/72 px-4 py-3 shadow-xl backdrop-blur">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
+                {labels.heatScale}
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-[11px] text-slate-300">{labels.low}</span>
+                <div className="h-2 w-28 rounded-full bg-gradient-to-r from-[#fde68a] via-[#fb923c] to-[#b91c1c]" />
+                <span className="text-[11px] text-slate-300">{labels.high}</span>
+              </div>
+              <p className="mt-2 text-[11px] leading-5 text-slate-400">
+                {labels.heatScaleHint}
+              </p>
+            </div>
 
-        <div className="pointer-events-none absolute bottom-4 right-4 z-[500] rounded-2xl border border-white/15 bg-white/88 px-4 py-3 text-slate-900 shadow-xl backdrop-blur">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            {labels.focus}
-          </p>
-          <div className="mt-2 flex items-center gap-2 text-sm">
-            <span className="inline-block h-3 w-3 rounded-full border-2 border-slate-900 bg-rose-500" />
-            <span>{labels.focusHint}</span>
+            <div className="pointer-events-none absolute bottom-4 right-4 z-[500] rounded-2xl border border-white/15 bg-white/88 px-4 py-3 text-slate-900 shadow-xl backdrop-blur">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                {labels.focus}
+              </p>
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                <span className="inline-block h-3 w-3 rounded-full border-2 border-slate-900 bg-rose-500" />
+                <span>{labels.focusHint}</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex h-[420px] items-center justify-center bg-slate-950/60 p-6 text-center">
+            <div className="max-w-md rounded-2xl border border-white/10 bg-white/6 px-5 py-4 shadow-xl backdrop-blur">
+              <p className="text-sm font-semibold text-white">{map.title}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                {labels.noDataToVisualize}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
+}
+
+type MapContentLabels = Pick<
+  ReturnType<typeof getInterfaceLabels>,
+  'highlightedReportArea' | 'pendingTax' | 'propertiesCovered'
+>;
+
+function buildWardDetailsContent(
+  ward: DashboardMapPoint,
+  labels: MapContentLabels
+) {
+  return `
+    <div class="ward-map-tooltip__content">
+      <p class="ward-map-tooltip__title">${escapeHtml(ward.ward)}</p>
+      <p>${escapeHtml(labels.pendingTax)}: <strong>${formatCurrency(ward.pendingTax)}</strong></p>
+      <p>${escapeHtml(labels.propertiesCovered)}: <strong>${ward.totalProperties}</strong></p>
+      ${
+        ward.isFocus
+          ? `<p class="ward-map-tooltip__focus">${escapeHtml(labels.highlightedReportArea)}</p>`
+          : ''
+      }
+    </div>
+  `;
+}
+
+function resetLeafletContainer(container: HTMLDivElement) {
+  const leafletClasses = [
+    'leaflet-container',
+    'leaflet-touch',
+    'leaflet-fade-anim',
+    'leaflet-grab',
+    'leaflet-touch-drag',
+    'leaflet-touch-zoom',
+    'leaflet-zoom-anim',
+  ];
+
+  container.replaceChildren();
+  leafletClasses.forEach((className) => container.classList.remove(className));
+  delete (container as HTMLDivElement & { _leaflet_id?: number })._leaflet_id;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 function getHeatColor(intensity: number) {
@@ -291,7 +407,7 @@ function formatCompactCurrency(value: number) {
   return `INR ${compactValue}`;
 }
 
-function getWardLabelOffset(ward: string): [number, number] {
+function getWardLabelOffset(ward: string, index: number): [number, number] {
   const offsets: Record<string, [number, number]> = {
     'Ward 1': [58, 46],
     'Ward 2': [0, 54],
@@ -300,5 +416,16 @@ function getWardLabelOffset(ward: string): [number, number] {
     'Ward 5': [82, 18],
   };
 
-  return offsets[ward] ?? [54, 46];
+  const fallbackOffsets: [number, number][] = [
+    [58, 46],
+    [0, 54],
+    [-56, 44],
+    [-72, 18],
+    [82, 18],
+    [54, -6],
+    [-54, -6],
+    [0, -12],
+  ];
+
+  return offsets[ward] ?? fallbackOffsets[index % fallbackOffsets.length];
 }
